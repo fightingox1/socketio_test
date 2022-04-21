@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Display Webcam Stream</title>
+ 
+<style>
+#container {
+	margin: 0px auto;
+	margin-top: 45px;
+	width: 620px;
+	height: 880px;
+	border: 10px #333 solid;
+	display: inline-block;
+}
+#videoElement {
+	width: 620px;
+	height: 880px;
+	background-color: #666;
+}
+#screenshot {
+	margin: 0;
+	text-align: center;
+	border-radius: 15px;
+	width: 95%;
+	height: 30px;
+	left: 50%;
+	right: 50%;
+  -ms-transform: translateX(-50%);
+  transform: translateX(-50%);
+	position: absolute;
+}
+#hidden_canvas {
+	display: none;
+}
+</style>
+</head>
+ 
+<body style="text-align: center;">
+<button id="screenshot">Start!</button>
+<div id="container">
+	<video autoplay="true" id="videoElement">
+	
+	</video>
+	
+	<canvas id="hidden_canvas"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script type="module">
+import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js";
+
+const socket = io("http://localhost");
+
+console.log(socket.id); // undefined
+
+socket.on("connect", () => {
+  console.log(socket.id, "among"); // "G5p5..."
+});
+
+
+const hidden_canvas = document.getElementById("hidden_canvas")
+const container = document.getElementById("container");
+const video = document.querySelector("#videoElement");
+
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
+
+if (navigator.mediaDevices.getUserMedia) {
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(function (stream) {
+      video.srcObject = stream;
+    })
+    .catch(function (err0r) {
+      console.log("Something went wrong!");
+    });
+}
+
+window.onload = () => {
+$('#screenshot').click(() => {
+setInterval(function(){
+	html2canvas(container, {
+	allowTaint: true,
+	useCORS: false,
+	})
+	.then(function (canvas) {
+		post(dataURLtoFile(canvas.toDataURL("image/png", 0.5), 'image'))
+	})
+	.catch((e) => {
+		console.log(e);
+});},40);});}
+
+function post(image){
+			let formData = new FormData();
+			formData.append('image' , image);
+			console.log(formData.get('image'))
+			$.ajax({
+				url: "https://stream.fightingox1.repl.co",
+				type:"POST",
+				data: formData,
+				cache: false,
+				processData:false,
+				contentType:false,
+				error: function(data){
+					console.log("upload error" , data);
+					console.log(data.getAllResponseHeaders());
+				},
+				success: function(data){
+				}
+			})
+}
+
+ function dataURLtoFile(dataurl, filename) {
+ 
+        var arr = dataurl.split(','),
+            mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), 
+            n = bstr.length, 
+            u8arr = new Uint8Array(n);
+            
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        
+        return new File([u8arr], filename, {type:mime});
+    }
+
+</script>
+</body>
+</html>
